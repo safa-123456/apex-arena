@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (auth.uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - email: string (required, email format)
+    //   - photoURL: string (optional)
+    //   - role: string (required, 'member' | 'admin')
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: trainers
+    // Document ID: trainerId
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - role: string (required)
+    //   - image: string (optional)
+    //   - sports: list (required)
+    //   - price: number (required, positive)
+    //
+    // Collection: bookings
+    // Document ID: bookingId
+    // Fields:
+    //   - userId: string (required, auth.uid)
+    //   - type: string (required, 'court' | 'trainer')
+    //   - sportId: string (optional)
+    //   - trainerId: string (optional)
+    //   - date: string (required, YYYY-MM-DD)
+    //   - time: string (required)
+    //   - price: number (required, positive)
+    //   - status: string (required, 'confirmed' | 'cancelled')
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: applications
+    // Document ID: applicationId
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - phone: string (optional)
+    //   - experience: string (optional)
+    //   - status: string (required, 'pending' | 'approved' | 'rejected')
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "kawaresafa143@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDate(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+               data.uid == userId &&
+               isValidEmail(data.email) &&
+               data.role in ['member', 'admin'] &&
+               data.createdAt is timestamp;
+      }
+      
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == 'member' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /trainers/{trainerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      function isValidBooking(data) {
+        return data.keys().hasAll(['userId', 'type', 'date', 'time', 'price', 'status', 'createdAt']) &&
+               data.userId == request.auth.uid &&
+               data.type in ['court', 'trainer'] &&
+               isValidDate(data.date) &&
+               data.price is number && data.price > 0 &&
+               data.status in ['confirmed', 'cancelled'] &&
+               data.createdAt is timestamp;
+      }
+
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidBooking(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && 
+                    isValidBooking(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId;
+    }
+
+    match /applications/{applicationId} {
+      function isValidApplication(data) {
+        return data.keys().hasAll(['name', 'email', 'status', 'createdAt']) &&
+               isValidEmail(data.email) &&
+               data.status == 'pending' &&
+               data.createdAt is timestamp;
+      }
+
+      allow read: if isAdmin();
+      allow create: if isValidApplication(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+    
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores member profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["member", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Trainer": {
+      "title": "Trainer Profile",
+      "description": "Stores trainer information.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "image": { "type": "string" },
+        "sports": { "type": "array", "items": { "type": "string" } },
+        "price": { "type": "number" }
+      },
+      "required": ["id", "name", "role", "price"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Stores court and trainer reservations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["court", "trainer"] },
+        "sportId": { "type": "string" },
+        "trainerId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["confirmed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "date", "time", "price", "status"]
+    },
+    "Application": {
+      "title": "Membership Application",
+      "description": "Stores membership applications.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "experience": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/trainers/{trainerId}": {
+      "schema": "Trainer",
+      "description": "Trainer profile documents."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Booking documents."
+    },
+    "/applications/{applicationId}": {
+      "schema": "Application",
+      "description": "Membership application documents."
+    }
+  }
+}

@@ -5,7 +5,7 @@
 
 A full-stack DBMS project for managing sports clubs, members, events, and more — built with React, Node.js, and MySQL.
 
- Live Demo:  apex-arena-site.netlify.app
+ Live Demo:  apex-arena-site[.netlify.app](https://apex-arena-site.netlify.app/)
 
 📌 About the Project
 Apex Arena is a Sports Club Management System developed as a Database Management System (DBMS) project. It provides a centralized platform to manage everything a sports club needs — from member registration and team management to event scheduling and performance tracking.
